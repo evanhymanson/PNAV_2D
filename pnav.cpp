@@ -11,16 +11,21 @@ void Target::init(double x0, double y0, double v0, double a0, double gam0) {
     y = y0;
     v = v0;
     a = a0;
-    gam = gam0;
-    gamd = a / v;
+    gam = gam0 * M_PI / 180.0;
     vx = -v*cos(gam);
     vy = -v*sin(gam);
 }
 
-void Target::update(double dt) {
+void Target::update(double dt, double t) {
+    if (t < 30) {
+        a = 0;
+    } 
+
+    double gamd = a / v;
     double x_old = x;
     double y_old = y;
     double gam_old = gam;
+    double gamd_old = gamd;
     double vx_old = vx;
     double vy_old = vy;
 
@@ -40,13 +45,11 @@ void Target::update(double dt) {
 }
 
 // Missile method implementations
-void Missile::init(double x0, double y0, double v0, double hd0, double ax0, double ay0) {
+void Missile::init(double x0, double y0, double v0, double hd0) {
     x = x0;
     y = y0;
     v = v0;
-    hd = hd0 / 57.3;
-    ax = ax0;
-    ay = ay0;
+    hd = hd0 * M_PI / 180.0;  // Convert degrees to radians
 }
 
 void Missile::compute_guide(double N, double vc, double xlamd, double xlam) {
@@ -73,6 +76,8 @@ void Missile::update(double dt) {
     y = y_old + 0.5*dt*(vy_old + vy_pred);
     vx = vx_old + 0.5*dt*(ax_cmd + ax_cmd);
     vy = vy_old + 0.5*dt*(ay_cmd + ay_cmd);
+
+    hd = atan2(vy, vx);
 }
 
 RelativeState computeRelative(const Missile& missile, const Target& targ) {
@@ -92,6 +97,37 @@ RelativeState computeRelative(const Missile& missile, const Target& targ) {
     return rel;
 }   
 
+void Logger::log(double t, const Missile& missile, const Target& targ, const RelativeState& rel) {
+    time.push_back(t);
+    
+    // missile_hist missile_hist;
+    missile_hist.x.push_back(missile.x);
+    missile_hist.y.push_back(missile.y);
+    missile_hist.vx.push_back(missile.vx);
+    missile_hist.vy.push_back(missile.vy);
+    missile_hist.ax_cmd.push_back(missile.ax_cmd);
+    missile_hist.hd.push_back(missile.hd);
+
+    // targ_hist targ_hist;
+    targ_hist.x.push_back(targ.x);
+    targ_hist.y.push_back(targ.y);
+    targ_hist.vx.push_back(targ.vx);
+    targ_hist.vy.push_back(targ.vy);
+    targ_hist.a.push_back(targ.a);
+    targ_hist.gam.push_back(targ.gam);
+    targ_hist.gamd.push_back(targ.gamd);
+
+    // rel_hist rel_hist;
+    rel_hist.x.push_back(rel.x);
+    rel_hist.y.push_back(rel.y);
+    rel_hist.vx.push_back(rel.vx);
+    rel_hist.vy.push_back(rel.vy);
+    rel_hist.r.push_back(rel.r);
+    rel_hist.xlam.push_back(rel.xlam);
+    rel_hist.xlamd.push_back(rel.xlamd);
+    rel_hist.vc.push_back(rel.vc);
+}
+
 void SimulatePNav2d(Missile& missile, Target& targ) {
 
     RelativeState rel = computeRelative(missile, targ);
@@ -107,8 +143,11 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
 
     const double N = 4.0;
 
+    Logger log;
+    log.log(t, missile, targ, rel);
+
     // Engagement Loop
-    while (rel.vc > 0.0) {
+    while (rel.vc > 0) {
 
         if (rel.r > 10) {
             h = .001;
@@ -124,11 +163,13 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
 
         // Dynamics
         missile.update(h);
-        targ.update(h);
-
-        cout << "t: " << t << ", r: " << rel.r << endl;
+        targ.update(h, t);
 
         t += h;
+
+        log.log(t, missile, targ, rel);
+
+        cout << "t: " << t << ", r: " << rel.r << endl;
 
     }
 }
