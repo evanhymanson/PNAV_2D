@@ -18,9 +18,9 @@ void Target::init(double x0, double y0, double v0, double a0, double gam0) {
 }
 
 void Target::update(double dt, double t) {
-    if (t < 30) {
-        a = 0;
-    } 
+    // if (t < 30) {
+    //     a = 0;
+    // } 
 
     double gamd = a / v;
     double x_old = x;
@@ -134,9 +134,9 @@ void Logger::log(double t, const Missile& missile, const Target& targ, const Rel
 void Logger::exportCSV(const string& filename) const {
     ofstream file(filename);
 
-    file << "time, m_x, m_y, m_vx, m_vy, m_ax_cmd, m_ay_cmd, m_hd,";
-    file << "t_x, t_y, t_vx, t_vy, t_v, t_a, t_gam, t_gamd,";
-    file << "rel_x, rel_y, rel_r, rel_vx, rel_vy, rel_xlam, rel_xlamd, rel_vc\n";
+    file << "time,m_x,m_y,m_vx,m_vy,m_ax_cmd,m_ay_cmd,m_hd,";
+    file << "t_x,t_y,t_vx,t_vy,t_v,t_a,t_gam,t_gamd,";
+    file << "rel_x,rel_y,rel_r,rel_vx,rel_vy,rel_xlam,rel_xlamd,rel_vc\n";
 
     for (int i = 0; i < time.size(); i++) {
         file << time[i] << ",";
@@ -166,7 +166,7 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
     double t = 0.0;
     double h = 0.0;
 
-    const double N = 4.0;
+    const double N = 1.0;
 
     Logger log;
     log.log(t, missile, targ, rel);

@@ -12,7 +12,7 @@ int main() {
     double m_x0 = 0; // m
     double m_y0 = 0; // m
     double m_v0 = 3000; // m/s
-    double m_hd0 = 0; // deg
+    double m_hd0 = -30; // deg
  
     missile.init(m_x0, m_y0, m_v0, m_hd0);
 
