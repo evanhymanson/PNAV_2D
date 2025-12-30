@@ -18,9 +18,6 @@ void Target::init(double x0, double y0, double v0, double a0, double gam0) {
 }
 
 void Target::update(double dt, double t) {
-    // if (t < 30) {
-    //     a = 0;
-    // } 
 
     double gamd = a / v;
     double x_old = x;
@@ -166,7 +163,7 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
     double t = 0.0;
     double h = 0.0;
 
-    const double N = 1.0;
+    const double N = 4;
 
     Logger log;
     log.log(t, missile, targ, rel);
