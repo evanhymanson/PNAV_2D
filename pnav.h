@@ -70,6 +70,8 @@ public:
     rel_hist rel_hist;
 
     void log(double t, const Missile& missile, const Target& targ, const RelativeState& rel);
+
+    void exportCSV(const std::string& filename) const;
 };
 
 void SimulatePNav2d(Missile& missile, Target& targ);
