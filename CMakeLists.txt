@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # create executable
 add_executable(main 
             main.cpp
-            pnav.cpp)
+            pnav.cpp
+            logger.cpp
+            filter.cpp)
 
 

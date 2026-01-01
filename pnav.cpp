@@ -2,6 +2,8 @@
 #include <cmath>
 #include <vector>
 #include "pnav.h"
+#include "logger.h"
+#include "filter.h"
 #include <fstream>
 
 using namespace std;
@@ -89,71 +91,19 @@ RelativeState computeRelative(const Missile& missile, const Target& targ) {
 
     rel.xlam = atan2(rel.y, rel.x); // los 
     rel.xlamd = (rel.x*rel.vy - rel.y*rel.vx) / (rel.r*rel.r); // d (los)
+    // rel.xlamd_orig = rel.xlamd;
 
     rel.vc = -(rel.x*rel.vx + rel.y*rel.vy) / rel.r;
 
     return rel;
 }   
 
-void Logger::log(double t, const Missile& missile, const Target& targ, const RelativeState& rel) {
-    time.push_back(t);
-    
-    // missile_hist missile_hist;
-    missile_hist.x.push_back(missile.x);
-    missile_hist.y.push_back(missile.y);
-    missile_hist.vx.push_back(missile.vx);
-    missile_hist.vy.push_back(missile.vy);
-    missile_hist.ax_cmd.push_back(missile.ax_cmd);
-    missile_hist.ay_cmd.push_back(missile.ay_cmd);
-    missile_hist.hd.push_back(missile.hd);
-
-    // targ_hist targ_hist;
-    targ_hist.x.push_back(targ.x);
-    targ_hist.y.push_back(targ.y);
-    targ_hist.v.push_back(targ.v);
-    targ_hist.vx.push_back(targ.vx);
-    targ_hist.vy.push_back(targ.vy);
-    targ_hist.a.push_back(targ.a);
-    targ_hist.gam.push_back(targ.gam);
-    targ_hist.gamd.push_back(targ.gamd);
-
-    // rel_hist rel_hist;
-    rel_hist.x.push_back(rel.x);
-    rel_hist.y.push_back(rel.y);
-    rel_hist.vx.push_back(rel.vx);
-    rel_hist.vy.push_back(rel.vy);
-    rel_hist.r.push_back(rel.r);
-    rel_hist.xlam.push_back(rel.xlam);
-    rel_hist.xlamd.push_back(rel.xlamd);
-    rel_hist.vc.push_back(rel.vc);
-}
-
-void Logger::exportCSV(const string& filename) const {
-    ofstream file(filename);
-
-    file << "time,m_x,m_y,m_vx,m_vy,m_ax_cmd,m_ay_cmd,m_hd,";
-    file << "t_x,t_y,t_vx,t_vy,t_v,t_a,t_gam,t_gamd,";
-    file << "rel_x,rel_y,rel_r,rel_vx,rel_vy,rel_xlam,rel_xlamd,rel_vc\n";
-
-    for (int i = 0; i < time.size(); i++) {
-        file << time[i] << ",";
-        file << missile_hist.x[i] << "," << missile_hist.y[i] << ",";
-        file << missile_hist.vx[i] << "," << missile_hist.vy[i] << ",";
-        file << missile_hist.ax_cmd[i] << "," << missile_hist.ay_cmd[i] << "," << missile_hist.hd[i] << ",";
-        file << targ_hist.x[i] << "," << targ_hist.y[i] << ",";
-        file << targ_hist.vx[i] << "," << targ_hist.vy[i] << "," << targ_hist.v[i] << ",";
-        file << targ_hist.a[i] << "," << targ_hist.gam[i] << "," << targ_hist.gamd[i] << ",";
-        file << rel_hist.x[i] << "," << rel_hist.y[i] << "," << rel_hist.r[i] << "," << rel_hist.vx[i] << "," << rel_hist.vy[i] << ",";
-        file << rel_hist.xlam[i] << "," << rel_hist.xlamd[i] << "," << rel_hist.vc[i] << "\n";
-    }
-
-    file.close();
-}
-
 void SimulatePNav2d(Missile& missile, Target& targ) {
 
     RelativeState rel = computeRelative(missile, targ);
-    
+    Digital_Fading_Memory_Filter filter(0.5, rel.xlam, rel.xlamd, .01);
+    filter.filter(rel.xlam);
+
     double xlead = asin(targ.v * sin(targ.gam - rel.xlam) / missile.v);
     double theta = rel.xlam + xlead;
 
@@ -162,12 +112,13 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
 
     double t = 0.0;
     double h = 0.0;
+    double t_filter = 0.0;
 
     const double N = 4;
 
     Logger log;
-    log.log(t, missile, targ, rel);
-
+    log.log(t, missile, targ, rel, filter);
+    
     // Engagement Loop
     while (rel.vc > 0) {
 
@@ -180,16 +131,27 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
         // Relative geometry
         rel = computeRelative(missile, targ);
 
+        // Sample frequency 
+        if (t_filter >= filter.ts) {
+            filter.filter(rel.xlam);
+            t_filter = 0;
+        }
+
+        // Get filtered values 
+        double xh_lam = filter.get_xh_xlam();
+        double xh_lamd = filter.get_xh_xlamd();
+        
         // Guidance law
-        missile.compute_guide(N, rel.vc, rel.xlamd, rel.xlam);
+        missile.compute_guide(N, rel.vc, xh_lamd, xh_lam);
 
         // Dynamics
         missile.update(h);
         targ.update(h, t);
 
         t += h;
+        t_filter += h;
 
-        log.log(t, missile, targ, rel);
+        log.log(t, missile, targ, rel, filter);
 
         cout << "t: " << t << ", r: " << rel.r << endl;
 
