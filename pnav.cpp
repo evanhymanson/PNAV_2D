@@ -10,18 +10,50 @@
 using namespace std;
 
 // Target method implementations
-void Target::init(double x0, double y0, double v0, double a0, double gam0) {
+void Target::init(double x0, double y0, double v0, double a0, double gam0, Maneuver maneuver) {
+    this->maneuver = maneuver;
     x = x0;
     y = y0;
     v = v0;
-    a = a0;
+    this->a0 = a0;
     gam = gam0 * M_PI / 180.0;
     vx = -v*cos(gam);
     vy = -v*sin(gam);
+    a = compute_lateral_accel(0);
 }
 
-void Target::update(double dt, double t) {
+double Target::compute_lateral_accel(double t) {
+    switch(maneuver) {
+        case Maneuver::CONSTANT_TURN:
+            return a0;
+            break;
 
+        case Maneuver::WEAVE:
+            return a0 * sin(10.0 * t);
+            break;
+
+        case Maneuver::BARREL_ROLL:
+            return a0 * sin(4.0 * t);
+            break;
+
+        case Maneuver::SPLIT_S: 
+            return (t > 30) ? -a0 : a0;
+            break;
+
+        case Maneuver::SPIRAL_DIVE:
+            return a0 * (1.0 + 0.1*t);
+
+        case Maneuver::BANG_BANG:
+            return (fmod(t, 20.0) < 10.0) ? a0 : -a0;
+
+        default:
+            return a0;
+            break;
+    }
+}
+void Target::update(double dt, double t) {
+    
+    a = compute_lateral_accel(t);
     double gamd = a / v;
     double x_old = x;
     double y_old = y;
@@ -107,8 +139,8 @@ RelativeState computeRelative(const Missile& missile, const Target& targ) {
 void SimulatePNav2d(Missile& missile, Target& targ) {
 
     RelativeState rel = computeRelative(missile, targ);
-    
-    double meas_sigma = .001;
+
+    double meas_sigma = .005;
     double q = 5.0;
     SensorNoise meas_noise(meas_sigma);
     Kalman_Filter filter(.05, q, rel.xlam, rel.xlamd, meas_sigma);
@@ -128,9 +160,9 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
 
     Logger log;
     log.log(t, missile, targ, rel, filter);
-    
+
     // Engagement Loop
-    while (rel.vc > 0) {
+    while (true) {
 
         if (rel.r > 10) {
             h = 1e-3;
@@ -141,16 +173,21 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
         // Relative geometry
         rel = computeRelative(missile, targ);
 
-        // Sample frequency 
+        // Check termination condition
+        if (rel.vc <= 0 || rel.r < 0.1) {
+            break;
+        }
+
+        // Sample frequency
         if (t_filter >= filter.ts) {
             filter.filter(rel.xlam + meas_noise.noise());
             t_filter = 0;
         }
 
-        // Get filtered values 
+        // Get filtered values
         double xh_lam = filter.get_xh_xlam();
         double xh_lamd = filter.get_xh_xlamd();
-        
+
         // Guidance law
         missile.APN(N, rel.vc, xh_lamd, xh_lam, targ.a);
 

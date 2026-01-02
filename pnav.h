@@ -3,16 +3,27 @@
 
 #include <vector>
 
+enum class Maneuver {
+    CONSTANT_TURN,
+    WEAVE,
+    BARREL_ROLL,
+    SPLIT_S,
+    SPIRAL_DIVE,
+    BANG_BANG
+};
 class Target {
 public:
     double x, y;
     double vx, vy;
     double gam, gamd;
     double v;
+    double a0;
     double a;
 
-    void init(double x0, double y0, double v0, double a0, double gam0);
+    Maneuver maneuver;
+    void init(double x0, double y0, double v0, double a0, double gam0, Maneuver maneuver = Maneuver::CONSTANT_TURN);
     void update(double dt, double t);
+    double compute_lateral_accel(double t);
 };
 
 class Missile {
