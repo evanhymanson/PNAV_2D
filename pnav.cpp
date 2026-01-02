@@ -4,6 +4,7 @@
 #include "pnav.h"
 #include "logger.h"
 #include "filter.h"
+#include "sensor_noise.h"
 #include <fstream>
 
 using namespace std;
@@ -52,9 +53,15 @@ void Missile::init(double x0, double y0, double v0, double hd0) {
     hd = hd0 * M_PI / 180.0;  // Convert degrees to radians
 }
 
-void Missile::compute_guide(double N, double vc, double xlamd, double xlam) {
+void Missile::PN(double N, double vc, double xlamd, double xlam) {
     double a_cmd = N * vc * xlamd;
-    ax_cmd = - a_cmd*sin(xlam);
+    ax_cmd = -a_cmd*sin(xlam);
+    ay_cmd = a_cmd*cos(xlam);
+}
+
+void Missile::APN(double N, double vc, double xlamd, double xlam, double targ_a) {
+    double a_cmd = N * vc * xlamd + (N * targ_a) / 2;
+    ax_cmd = -a_cmd*sin(xlam);
     ay_cmd = a_cmd*cos(xlam);
 }
 
@@ -91,7 +98,6 @@ RelativeState computeRelative(const Missile& missile, const Target& targ) {
 
     rel.xlam = atan2(rel.y, rel.x); // los 
     rel.xlamd = (rel.x*rel.vy - rel.y*rel.vx) / (rel.r*rel.r); // d (los)
-    // rel.xlamd_orig = rel.xlamd;
 
     rel.vc = -(rel.x*rel.vx + rel.y*rel.vy) / rel.r;
 
@@ -101,8 +107,12 @@ RelativeState computeRelative(const Missile& missile, const Target& targ) {
 void SimulatePNav2d(Missile& missile, Target& targ) {
 
     RelativeState rel = computeRelative(missile, targ);
-    Digital_Fading_Memory_Filter filter(0.5, rel.xlam, rel.xlamd, .01);
-    filter.filter(rel.xlam);
+    
+    double meas_sigma = .001;
+    double q = 5.0;
+    SensorNoise meas_noise(meas_sigma);
+    Kalman_Filter filter(.05, q, rel.xlam, rel.xlamd, meas_sigma);
+    filter.filter(rel.xlam + meas_noise.noise());
 
     double xlead = asin(targ.v * sin(targ.gam - rel.xlam) / missile.v);
     double theta = rel.xlam + xlead;
@@ -133,7 +143,7 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
 
         // Sample frequency 
         if (t_filter >= filter.ts) {
-            filter.filter(rel.xlam);
+            filter.filter(rel.xlam + meas_noise.noise());
             t_filter = 0;
         }
 
@@ -142,7 +152,7 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
         double xh_lamd = filter.get_xh_xlamd();
         
         // Guidance law
-        missile.compute_guide(N, rel.vc, xh_lamd, xh_lam);
+        missile.APN(N, rel.vc, xh_lamd, xh_lam, targ.a);
 
         // Dynamics
         missile.update(h);

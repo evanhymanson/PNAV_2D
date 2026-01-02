@@ -36,7 +36,6 @@ public:
         std::vector<double> r;                // range
         std::vector<double> xlam;             // line-of-sight angle
         std::vector<double> xlamd;            // LOS rate filtered
-        // std::vector<double> xlamd_orig;       // orig from geometric calc
         std::vector<double> vc;               // closing velocity
     };
 
@@ -44,7 +43,7 @@ public:
     targ_hist targ_hist;
     filter_hist filter_hist;
     
-    void log(double t, const Missile& missile, const Target& targ, const RelativeState& rel, const Digital_Fading_Memory_Filter& filter);
+    void log(double t, const Missile& missile, const Target& targ, const RelativeState& rel, const Kalman_Filter& filter);
 
     void exportCSV(const std::string& filename) const;
 };

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void Logger::log(double t, const Missile& missile, const Target& targ, const RelativeState& rel, const Digital_Fading_Memory_Filter& filter) {
+void Logger::log(double t, const Missile& missile, const Target& targ, const RelativeState& rel, const Kalman_Filter& filter) {
     time.push_back(t);
     
     // missile_hist missile_hist;
@@ -39,8 +39,8 @@ void Logger::log(double t, const Missile& missile, const Target& targ, const Rel
     rel_hist.vc.push_back(rel.vc);
 
     // filter history 
-    filter_hist.xlam.push_back(filter.xh_lam);
-    filter_hist.xlamd.push_back(filter.xh_lamd);
+    filter_hist.xlam.push_back(filter.get_xh_xlam());
+    filter_hist.xlamd.push_back(filter.get_xh_xlamd());
 }
 
 void Logger::exportCSV(const string& filename) const {

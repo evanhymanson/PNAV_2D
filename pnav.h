@@ -24,7 +24,8 @@ public:
     double hd;
 
     void init(double x0, double y0, double v0, double hd0);
-    void compute_guide(double N, double vc, double xlamd, double xlam);
+    void PN(double N, double vc, double xlamd, double xlam);
+    void APN(double N, double vc, double xlamd, double xlam, double targ_a);
     void update(double dt);
 };
 
@@ -40,4 +41,5 @@ struct RelativeState {
 void SimulatePNav2d(Missile& missile, Target& targ);
 RelativeState computeRelative(const Missile& missile, const Target& targ);
 
+double addNoise(double signoise);
 #endif
