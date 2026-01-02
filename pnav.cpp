@@ -116,11 +116,11 @@ void Missile::update(double dt) {
     ax = ax + alpha * (ax_cmd - ax);
     ay = ay + alpha * (ay_cmd - ay);
 
-    // predict 
+    // predict
     double x_pred = x_old + vx_old*dt;
     double y_pred = y_old + vy_old*dt;
-    double vx_pred = vx_old + ax*dt;
-    double vy_pred = vy_old + ay*dt;
+    double vx_pred = vx_old + ax_old*dt;
+    double vy_pred = vy_old + ay_old*dt;
 
     // corrector 
     x = x_old + 0.5*dt*(vx_old + vx_pred);
