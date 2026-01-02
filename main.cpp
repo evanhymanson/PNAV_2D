@@ -13,8 +13,9 @@ int main() {
     double m_y0 = 0; // m
     double m_v0 = 3000; // m/s
     double m_hd0 = 0; // deg
- 
-    missile.init(m_x0, m_y0, m_v0, m_hd0);
+    double m_tau = 0.2; // sec (guidance lag time constant)
+
+    missile.init(m_x0, m_y0, m_v0, m_hd0, m_tau);
 
     double targ_x0 = 40000; // m
     double targ_y0 = 100000; // m

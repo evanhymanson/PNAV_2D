@@ -78,11 +78,12 @@ void Target::update(double dt, double t) {
 }
 
 // Missile method implementations
-void Missile::init(double x0, double y0, double v0, double hd0) {
+void Missile::init(double x0, double y0, double v0, double hd0, double tau) {
     x = x0;
     y = y0;
     v = v0;
     hd = hd0 * M_PI / 180.0;  // Convert degrees to radians
+    this->tau = tau; // system time constant 
 }
 
 void Missile::PN(double N, double vc, double xlamd, double xlam) {
@@ -98,6 +99,15 @@ void Missile::APN(double N, double vc, double xlamd, double xlam, double targ_a)
 }
 
 void Missile::update(double dt) {
+    // first order lag: tau * a' + a = a_cmd
+    // discrete: a_actual(k+1) = a_actual(k) + dt/tau*(a_cmd - a_actual(k))
+
+    double alpha = dt / tau; // lag coef.
+
+    // Update with lag 
+    ax = ax + alpha * (ax_cmd - ax);
+    ay = ay + alpha * (ay_cmd - ay);
+
     // store old values 
     double x_old = x;
     double y_old = y;
@@ -107,14 +117,14 @@ void Missile::update(double dt) {
     // predict 
     double x_pred = x_old + vx_old*dt;
     double y_pred = y_old + vy_old*dt;
-    double vx_pred = vx_old + ax_cmd*dt;
-    double vy_pred = vy_old + ay_cmd*dt;
+    double vx_pred = vx_old + ax*dt;
+    double vy_pred = vy_old + ay*dt;
 
     // corrector 
     x = x_old + 0.5*dt*(vx_old + vx_pred);
     y = y_old + 0.5*dt*(vy_old + vy_pred);
-    vx = vx_old + 0.5*dt*(ax_cmd + ax_cmd);
-    vy = vy_old + 0.5*dt*(ay_cmd + ay_cmd);
+    vx = vx_old + 0.5*dt*(ax + ax);
+    vy = vy_old + 0.5*dt*(ay + ay);
 
     hd = atan2(vy, vx);
 }
@@ -138,6 +148,15 @@ RelativeState computeRelative(const Missile& missile, const Target& targ) {
 
 void SimulatePNav2d(Missile& missile, Target& targ) {
 
+    // Initialize missile velocities first (need these for computeRelative)
+    RelativeState rel_temp = computeRelative(missile, targ);
+    double xlead = asin(targ.v * sin(targ.gam - rel_temp.xlam) / missile.v);
+    double theta = rel_temp.xlam + xlead;
+
+    missile.vx = missile.v * cos(theta + missile.hd);
+    missile.vy = missile.v * sin(theta + missile.hd);
+
+    // Now compute relative state with proper missile velocities
     RelativeState rel = computeRelative(missile, targ);
 
     double meas_sigma = .005;
@@ -145,12 +164,6 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
     SensorNoise meas_noise(meas_sigma);
     Kalman_Filter filter(.05, q, rel.xlam, rel.xlamd, meas_sigma);
     filter.filter(rel.xlam + meas_noise.noise());
-
-    double xlead = asin(targ.v * sin(targ.gam - rel.xlam) / missile.v);
-    double theta = rel.xlam + xlead;
-
-    missile.vx = missile.v * cos(theta + missile.hd);
-    missile.vy = missile.v * sin(theta + missile.hd);
 
     double t = 0.0;
     double h = 0.0;
