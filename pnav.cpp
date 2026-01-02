@@ -104,16 +104,18 @@ void Missile::update(double dt) {
 
     double alpha = dt / tau; // lag coef.
 
-    // Update with lag 
-    ax = ax + alpha * (ax_cmd - ax);
-    ay = ay + alpha * (ay_cmd - ay);
-
     // store old values 
     double x_old = x;
     double y_old = y;
     double vx_old = vx;
     double vy_old = vy;
-    
+    double ax_old = ax;
+    double ay_old = ay;
+
+    // Update with lag 
+    ax = ax + alpha * (ax_cmd - ax);
+    ay = ay + alpha * (ay_cmd - ay);
+
     // predict 
     double x_pred = x_old + vx_old*dt;
     double y_pred = y_old + vy_old*dt;
@@ -123,8 +125,8 @@ void Missile::update(double dt) {
     // corrector 
     x = x_old + 0.5*dt*(vx_old + vx_pred);
     y = y_old + 0.5*dt*(vy_old + vy_pred);
-    vx = vx_old + 0.5*dt*(ax + ax);
-    vy = vy_old + 0.5*dt*(ay + ay);
+    vx = vx_old + 0.5*dt*(ax_old + ax);
+    vy = vy_old + 0.5*dt*(ay_old + ay);
 
     hd = atan2(vy, vx);
 }
