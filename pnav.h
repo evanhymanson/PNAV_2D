@@ -51,7 +51,7 @@ struct RelativeState {
     double vc;               // closing velocity
 };
 
-void SimulatePNav2d(Missile& missile, Target& targ);
+void SimulatePNav2d(Missile& missile, Target& targ, std::string& csvname);
 RelativeState computeRelative(const Missile& missile, const Target& targ);
 
 double addNoise(double signoise);

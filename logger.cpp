@@ -46,6 +46,11 @@ void Logger::log(double t, const Missile& missile, const Target& targ, const Rel
 void Logger::exportCSV(const string& filename) const {
     ofstream file(filename);
 
+    if (!file.is_open()) {
+        cerr << "ERROR: Could not open file: " << filename << endl;
+        return;
+    }
+
     file << "time,m_x,m_y,m_vx,m_vy,m_ax_cmd,m_ay_cmd,m_hd,";
     file << "t_x,t_y,t_vx,t_vy,t_v,t_a,t_gam,t_gamd,";
     file << "rel_x,rel_y,rel_r,rel_vx,rel_vy,rel_xlam,rel_xlamd,rel_vc,xh_xlam,xh_xlamd\n";

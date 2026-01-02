@@ -148,7 +148,7 @@ RelativeState computeRelative(const Missile& missile, const Target& targ) {
     return rel;
 }   
 
-void SimulatePNav2d(Missile& missile, Target& targ) {
+void SimulatePNav2d(Missile& missile, Target& targ, string& csvname) {
 
     // Initialize missile velocities first (need these for computeRelative)
     RelativeState rel_temp = computeRelative(missile, targ);
@@ -215,10 +215,10 @@ void SimulatePNav2d(Missile& missile, Target& targ) {
 
         log.log(t, missile, targ, rel, filter);
 
-        cout << "t: " << t << ", r: " << rel.r << endl;
+        // cout << "t: " << t << ", r: " << rel.r << endl;
 
     }
 
-    log.exportCSV("sim.csv");
+    log.exportCSV(csvname);
 }
 
