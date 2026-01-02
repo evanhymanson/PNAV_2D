@@ -10,23 +10,23 @@ int main() {
     double m_x0 = 0; // m
     double m_y0 = 0; // m
 
-    vector<double> tx = {10000, 20000, 30000};              // 2
-    vector<double> ty = {0, 10000, 20000};                  // 2
-    vector<double> tv = {500, 1000, 1500, 2000};           // 3
-    vector<double> ta = {2, 5};                     // 2
-    vector<double> tgam = {-90, 0, 90};              // 3
-    vector<double> mv = {2000, 2500, 3000};          // 3
-    vector<double> mhd = {-30, 0, 30};               // 3
-    vector<double> tau = {.2, .6};                   // 2
+    vector<double> tx = {30000}; // {10000, 20000, 30000};              // 3
+    vector<double> ty = {20000}; // {0, 10000, 20000};                  // 3
+    vector<double> tv = {2000}; //{500, 1000, 1500, 2000};           // 4
+    vector<double> ta = {5}; // {2, 5};                     // 2
+    vector<double> tgam = {90}; // {-90, 0, 90};              // 3
+    vector<double> mv = {3000}; // {2000, 2500, 3000};          // 3
+    vector<double> mhd = {30}; // {-30, 0, 30};               // 3
+    vector<double> tau = {.6}; // {.2, .6};                   // 2
 
     
     vector<Maneuver> maneuvers = {
         Maneuver::CONSTANT_TURN,
-        Maneuver::WEAVE,
-        Maneuver::BARREL_ROLL,
-        Maneuver::SPLIT_S,
-        Maneuver::SPIRAL_DIVE,
-        Maneuver::BANG_BANG
+        // Maneuver::WEAVE,
+        // Maneuver::BARREL_ROLL,
+        // Maneuver::SPLIT_S,
+        // Maneuver::SPIRAL_DIVE,
+        // Maneuver::BANG_BANG
     };
 
 

@@ -102,31 +102,38 @@ void Missile::update(double dt) {
     // first order lag: tau * a' + a = a_cmd
     // discrete: a_actual(k+1) = a_actual(k) + dt/tau*(a_cmd - a_actual(k))
 
-    double alpha = dt / tau; // lag coef.
+    double alpha = dt / tau; // lag coefficient
 
-    // store old values 
-    double x_old = x;
-    double y_old = y;
+    // Store old values
+    double x_old  = x;
+    double y_old  = y;
     double vx_old = vx;
     double vy_old = vy;
     double ax_old = ax;
     double ay_old = ay;
 
-    // Update with lag 
-    ax = ax + alpha * (ax_cmd - ax);
-    ay = ay + alpha * (ay_cmd - ay);
+    // Update acceleration with first-order lag
+    ax = ax_old + alpha * (ax_cmd - ax_old);
+    ay = ay_old + alpha * (ay_cmd - ay_old);
 
-    // predict
-    double x_pred = x_old + vx_old*dt;
-    double y_pred = y_old + vy_old*dt;
-    double vx_pred = vx_old + ax_old*dt;
-    double vy_pred = vy_old + ay_old*dt;
+    // RK2 predictor step (using old acceleration)
+    double vx_pred = vx_old + ax_old * dt;
+    double vy_pred = vy_old + ay_old * dt;
 
-    // corrector 
-    x = x_old + 0.5*dt*(vx_old + vx_pred);
-    y = y_old + 0.5*dt*(vy_old + vy_pred);
-    vx = vx_old + 0.5*dt*(ax_old + ax);
-    vy = vy_old + 0.5*dt*(ay_old + ay);
+    // RK2 corrector step (average old and new acceleration)
+    vx = vx_old + 0.5 * dt * (ax_old + ax);
+    vy = vy_old + 0.5 * dt * (ay_old + ay);
+
+    // Normalize to maintain constant speed
+    double v_current = sqrt(vx*vx + vy*vy);
+    if (v_current > 0) {
+        vx = vx * (v / v_current);
+        vy = vy * (v / v_current);
+    }
+
+    // Update position using RK2 with velocity
+    x = x_old + 0.5 * dt * (vx_old + vx);
+    y = y_old + 0.5 * dt * (vy_old + vy);
 
     hd = atan2(vy, vx);
 }
@@ -171,7 +178,7 @@ void SimulatePNav2d(Missile& missile, Target& targ, string& csvname) {
     double h = 0.0;
     double t_filter = 0.0;
 
-    const double N = 4;
+    const double N = 5;
 
     Logger log;
     log.log(t, missile, targ, rel, filter);
